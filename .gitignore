@@ -1,0 +1,47 @@
+# Resultados de experimentos (no subir, son locales)
+experiments/results/
+experiments/results/**
+*.csv
+*.log
+
+# Archivos temporales
+/tmp/
+*.tmp
+*.bak
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+
+# Credenciales y secretos (NUNCA subir)
+*.pem
+*.key
+*.kubeconfig
+.kube/
+*.crt
+*.p12
+secrets/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Terraform (artefactos generados)
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

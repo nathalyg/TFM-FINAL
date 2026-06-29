@@ -1,0 +1,170 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tfm-app
+  labels:
+    name: tfm-app
+
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: tfm-app
+  labels:
+    app: nginx-demo
+data:
+  replicas_target: "2"
+  env: "lab"
+  environment: "TFM-GitOps-Lab"
+  description: "Lab GitOps para TFM - Nginx con selfHeal en ArgoCD"
+  default.conf: |
+    server {
+      listen 80;
+      server_name _;
+
+      location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+      }
+    }
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-demo
+  namespace: tfm-app
+  labels:
+    app: nginx-demo
+    version: "1.25-alpine"
+spec:
+  replicas: 2
+  progressDeadlineSeconds: 20
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: nginx-demo
+  template:
+    metadata:
+      labels:
+        app: nginx-demo
+      annotations:
+        description: "Nginx alpine image para lab de GitOps"
+    spec:
+      # Anti-afinidad para distribuir pods entre nodos
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - nginx-demo
+              topologyKey: kubernetes.io/hostname
+      
+      containers:
+      - name: nginx
+        image: nginx:1.25-alpine
+        imagePullPolicy: IfNotPresent
+        
+        # Puertos
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        # Recursos
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+        
+        # Environment desde ConfigMap
+        env:
+        - name: TFM_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: nginx-config
+              key: env
+        - name: TFM_REPLICAS
+          valueFrom:
+            configMapKeyRef:
+              name: nginx-config
+              key: replicas_target
+        - name: TFM_DESCRIPTION
+          valueFrom:
+            configMapKeyRef:
+              name: nginx-config
+              key: description
+        
+        # Volúmenes
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+          readOnly: true
+      
+      # Volúmenes
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: nginx-config
+          optional: true
+
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: tfm-app
+  labels:
+    app: nginx-demo
+spec:
+  type: NodePort
+  selector:
+    app: nginx-demo
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    nodePort: 30080
+    protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800

@@ -1,0 +1,82 @@
+---
+# ArgoCD Application para nginx-demo
+# IMPORTANTE: Reemplaza TU_USUARIO y TU_REPO con tu información de GitHub
+#
+# Requisitos:
+# 1. Sube la carpeta ~/gitops-lab/ (o este repo) a GitHub
+# 2. Reemplaza la URL en 'repoURL'
+# 3. Aplica con: kubectl apply -f argocd/application.yaml
+# 4. Monitorea: kubectl get app -n argocd
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-demo
+  namespace: argocd
+  # Finalizers para sincronización en cascada al eliminar
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  # Proyecto de ArgoCD (por defecto)
+  project: default
+  
+  # Fuente: repositorio Git
+  source:
+    # REEMPLAZA AQUÍ: TU_USUARIO/TU_REPO
+    repoURL: https://github.com/tu-usuario/tfm-gitops-setup
+    # Branch/tag/commit a desplegar
+    targetRevision: main
+    # Ruta dentro del repo (donde están los manifiestos)
+    path: manifests
+    # Configuración opcional de Helm (si la repo usa Helm)
+    # helm:
+    #   releaseName: nginx-demo
+    #   values: |
+    #     replicaCount: 2
+
+  # Destino: cluster y namespace
+  destination:
+    # Servidor de Kubernetes (default = cluster local de ArgoCD)
+    server: https://kubernetes.default.svc
+    # Namespace donde desplegar
+    namespace: tfm-app
+  
+  # Política de sincronización - CLAVE PARA EXPERIMENTOS
+  syncPolicy:
+    # Sincronización automática
+    automated:
+      # Prune: elimina recursos huérfanos (no están en Git)
+      prune: true
+      # SelfHeal: ArgoCD corrige cambios manuales (drift) y vuelve al estado de Git
+      # ⭐ IMPORTANTE: Esto es lo que detecta cuando haces cambios manuales
+      selfHeal: true
+    
+    # Opciones de sincronización
+    syncOptions:
+      # Crear namespace si no existe
+      - CreateNamespace=true
+      # Respetar .gitignore
+      - RespectIgnoreDifferences=false
+    
+    # Retry en caso de fallo
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # ignoreDifferences eliminado para que selfHeal detecte cambios en replicas
+
+---
+# Notification/Alert (opcional)
+# Descomenta si configuraste ArgoCD Notifications
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: nginx-demo-alerts
+#   namespace: argocd
+# data:
+#   trigger: |
+#     - when: app.status.operationState.phase in ['Error', 'Failed']
+#       send: [on-sync-failed]
