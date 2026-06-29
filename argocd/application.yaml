@@ -23,7 +23,7 @@ spec:
   # Fuente: repositorio Git
   source:
     # REEMPLAZA AQUÍ: TU_USUARIO/TU_REPO
-    repoURL: https://github.com/tu-usuario/tfm-gitops-setup
+    repoURL: https://github.com/nathalyg/TFM-FINAL
     # Branch/tag/commit a desplegar
     targetRevision: main
     # Ruta dentro del repo (donde están los manifiestos)
@@ -48,7 +48,7 @@ spec:
       # Prune: elimina recursos huérfanos (no están en Git)
       prune: true
       # SelfHeal: ArgoCD corrige cambios manuales (drift) y vuelve al estado de Git
-      # ⭐ IMPORTANTE: Esto es lo que detecta cuando haces cambios manuales
+      # IMPORTANTE: Esto es lo que detecta cuando haces cambios manuales
       selfHeal: true
     
     # Opciones de sincronización

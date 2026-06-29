@@ -193,6 +193,14 @@ Nota:
 
 - Terraform crea una EC2 en la cuenta y region del usuario.
 - El archivo `terraform.tfvars` es local y debe ajustarse a la cuenta de cada uno.
+### Configuración de Permisos de la Clave Privada
+
+Antes de conectarse por SSH, es obligatorio restringir los permisos del archivo de la clave privada (`tfm-private-key.pem`). De lo contrario, el cliente de SSH rechazará la conexión por seguridad.
+
+#### En Windows (PowerShell):
+```powershell
+icacls "tfm-private-key.pem" /inheritance:r /grant:r "$($env:USERDOMAIN)\$($env:USERNAME):(R)" /remove:g "BUILTIN\Users" "NT AUTHORITY\Authenticated Users"
+
 - El flujo completo puede ejecutarse con `QUICKSTART.sh` o fase por fase con cada script Bash individual.
 
 ## 8. Crear el cluster Kind
