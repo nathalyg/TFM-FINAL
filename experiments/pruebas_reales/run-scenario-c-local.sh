@@ -8,8 +8,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 APP="nginx-demo"
+APP_NS="tfm-app"
 ARGOCD_NS="argocd"
 DEFAULT_MAIN_BRANCH="main"
+GOOD_IMAGE="nginx:1.25-alpine"
 
 TS="$(date +%Y%m%d-%H%M%S)"
 BRANCH_NAME="scenario-c-exp-${TS}"
@@ -62,6 +64,21 @@ delete_remote_branch() {
   env GIT_TERMINAL_PROMPT=0 timeout 180s git -C "${REPO_ROOT}" push "${GIT_PUSH_TARGET}" ":refs/heads/${BRANCH_NAME}" >/dev/null 2>&1 || true
 }
 
+wait_app_healthy_synced() {
+  local timeout_s=${1:-180}
+  local end_ts=$(( $(date +%s) + timeout_s ))
+  while [ "$(date +%s)" -lt "${end_ts}" ]; do
+    local sync health
+    sync="$(kubectl get application "${APP}" -n "${ARGOCD_NS}" -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
+    health="$(kubectl get application "${APP}" -n "${ARGOCD_NS}" -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
+    if [ "${sync}" = "Synced" ] && [ "${health}" = "Healthy" ]; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
 copy_results_to_repo() {
   local source_results_dir="${WORKTREE_DIR}/experiments/pruebas_reales/results"
   if [ ! -d "${source_results_dir}" ]; then
@@ -76,9 +93,20 @@ copy_results_to_repo() {
 
 cleanup() {
   set +e
-  if [ -n "${TARGET_REVISION_ORIGINAL}" ]; then
-    patch_target_revision "${TARGET_REVISION_ORIGINAL}" >/dev/null 2>&1 || true
-  fi
+  log "Cleanup: restaurando targetRevision a ${DEFAULT_MAIN_BRANCH}..."
+  patch_target_revision "${DEFAULT_MAIN_BRANCH}" >/dev/null 2>&1 || true
+
+  log "Cleanup: forzando refresh de ArgoCD..."
+  kubectl annotate app "${APP}" -n "${ARGOCD_NS}" argocd.argoproj.io/refresh=hard --overwrite >/dev/null 2>&1 || true
+
+  log "Cleanup: forzando imagen sana ${GOOD_IMAGE} en Deployment..."
+  kubectl -n "${APP_NS}" set image deployment/"${APP}" nginx="${GOOD_IMAGE}" >/dev/null 2>&1 || true
+  kubectl -n "${APP_NS}" rollout status deployment/"${APP}" --timeout=180s >/dev/null 2>&1 || true
+
+  log "Cleanup: esperando Synced/Healthy..."
+  wait_app_healthy_synced 180 || true
+
+  log "Cleanup: eliminando rama temporal remota/local y worktree..."
   delete_remote_branch
   git -C "${REPO_ROOT}" worktree remove --force "${WORKTREE_DIR}" >/dev/null 2>&1 || true
   git -C "${REPO_ROOT}" branch -D "${BRANCH_NAME}" >/dev/null 2>&1 || true
@@ -113,7 +141,11 @@ patch_target_revision "${BRANCH_NAME}"
 
 log "Lanzando scenario-c.sh en la worktree aislada"
 cd "${WORKTREE_DIR}/experiments/pruebas_reales"
-NORMAL_RUNS="${NORMAL_RUNS:-30}" STRESS_RUNS="${STRESS_RUNS:-10}" REPO_BRANCH="${BRANCH_NAME}" bash scenario-c.sh "$@"
+SCENARIO_C_ORCHESTRATED=1 \
+NORMAL_RUNS="${NORMAL_RUNS:-30}" \
+STRESS_RUNS="${STRESS_RUNS:-10}" \
+REPO_BRANCH="${BRANCH_NAME}" \
+bash scenario-c.sh "$@"
 
 copy_results_to_repo
 print_final_state

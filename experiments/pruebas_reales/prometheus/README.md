@@ -3,8 +3,8 @@
 Este directorio contiene lo necesario para:
 
 1. Desplegar Prometheus en el namespace `argocd`
-2. Scrappear métricas nativas de ArgoCD en `argocd-metrics:8082`
-3. Scrappear métricas de estado de Kubernetes via `kube-state-metrics`
+2. Scrapear métricas nativas de ArgoCD en `argocd-metrics:8082`
+3. Scrapear métricas de estado de Kubernetes via `kube-state-metrics`
 4. Validar tiempos del script vs métricas en Prometheus
 
 ## Archivos
@@ -66,6 +66,9 @@ Columnas minimas requeridas:
 - una columna de duracion del script. El validador la infiere automaticamente entre:
   - `spec_recovery_s`
   - `rto_s`
+  - `tiempo_deteccion_s`
+  - `tiempo_recuperacion_post_revert_s`
+  - `recovery_time_observed_s`
   - `c2_rollback_s`
   - `c1_degraded_s`
   - `rto_segundos`
@@ -150,6 +153,8 @@ Nota:
 - Si no tienes `kube_*` metricas, necesitas exponer/scrapear `kube-state-metrics`.
 
 ## 6) Notas importantes
+
+- Mantén activo el `port-forward` a Prometheus durante toda la validación para que `http://localhost:9090` esté disponible.
 
 - La consulta usada por defecto en este repositorio es:
 

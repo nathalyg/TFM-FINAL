@@ -2,6 +2,8 @@
 
 Este directorio contiene los scripts de ejecucion de los escenarios del TFM, la generacion de resultados y la produccion de graficas finales.
 
+Este README es complementario al README raiz del repositorio: se centra en la ejecucion de `experiments/pruebas_reales/` y evita duplicar la parte de infraestructura (Terraform, bootstrap de cluster y fases base).
+
 La informacion cuantitativa del experimento no se documenta aqui. Los valores obtenidos, CSV y graficas se generan y se adjuntan en `results/` y en la salida de los scripts de analisis.
 
 ## Estructura
@@ -24,7 +26,7 @@ pruebas_reales/
 
 ## Prerrequisitos
 
-Antes de ejecutar los escenarios, verifica que ya existen y funcionan:
+Antes de ejecutar los escenarios, verifica que el stack base ya esta levantado (fases 1-3) y que los componentes de app/ArgoCD responden:
 
 ```bash
 kubectl cluster-info
@@ -48,7 +50,12 @@ Escenarios individuales:
 ```bash
 bash scenario-a.sh
 bash scenario-b.sh
-bash scenario-c.sh
+```
+
+Para el Escenario C usa siempre el wrapper (no ejecutar `scenario-c.sh` directo):
+
+```bash
+bash run-scenario-c-local.sh
 ```
 
 Escenario C aislado en worktree temporal:
@@ -83,12 +90,20 @@ Archivos presentes en el repositorio:
 - `scenario-b-argocd-20260522-014828.csv`
 - `scenario-b-control-20260522-014828.csv`
 - `scenario-c-20260627-232855.csv`
+- `prometheus_validation-scenario-a-20260522-005207.csv`
+- `prometheus-analysis-summary-a-20260522-005207.csv`
 - `prometheus_validation_t1.csv`
 - `prometheus_validation_t3.csv`
 
 Los CSV nuevos que generes durante tus corridas tambien se guardan en `results/`.
 
 ## Graficas y validacion Prometheus
+
+Para comparar con Prometheus, manten el endpoint accesible mientras ejecutas validaciones (en otra terminal):
+
+```bash
+kubectl -n argocd port-forward svc/prometheus 9090:9090
+```
 
 Generacion de graficas y tablas finales:
 

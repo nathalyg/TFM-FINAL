@@ -15,6 +15,12 @@
 
 set -euo pipefail
 
+if [ "${SCENARIO_C_ORCHESTRATED:-0}" != "1" ]; then
+  echo "ERROR: scenario-c.sh no debe ejecutarse directamente."
+  echo "       Usa: bash experiments/pruebas_reales/run-scenario-c-local.sh"
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 RESULTS_DIR="${SCRIPT_DIR}/results"
@@ -118,6 +124,19 @@ read_app_status_fields() {
 force_argocd_sync() {
   kubectl patch application "${APP}" -n "${ARGOCD_NS}" --type merge \
     -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}' &>/dev/null || true
+}
+
+validate_automated_policy_enabled() {
+  local prune self_heal
+  prune="$(kubectl get application "${APP}" -n "${ARGOCD_NS}" -o jsonpath='{.spec.syncPolicy.automated.prune}' 2>/dev/null || true)"
+  self_heal="$(kubectl get application "${APP}" -n "${ARGOCD_NS}" -o jsonpath='{.spec.syncPolicy.automated.selfHeal}' 2>/dev/null || true)"
+
+  if [ "${prune}" != "true" ] || [ "${self_heal}" != "true" ]; then
+    log "ERROR: ArgoCD ${APP} requiere syncPolicy.automated activo (selfHeal=true, prune=true)."
+    log "       Reejecuta la fase 2 para garantizar esa configuracion."
+    log "       Estado detectado: automated.prune=${prune:-<vacio>} automated.selfHeal=${self_heal:-<vacio>}"
+    exit 1
+  fi
 }
 
 wait_app_healthy_synced_poll() {
@@ -277,6 +296,11 @@ log "CSV de resultados: ${CSV}"
 echo ""
 echo "NOTA: El fallo y el rollback se inyectan por Git push sobre el mismo repo"
 echo "      que observa ArgoCD. T1 y T3 se capturan por watch; T4 y T5 por sondeo."
+echo ""
+
+log "[preflight] validando syncPolicy.automated (selfHeal/prune)..."
+validate_automated_policy_enabled
+log "[preflight] syncPolicy.automated OK"
 echo ""
 
 run_test_c() {

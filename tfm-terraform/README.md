@@ -10,6 +10,7 @@ Este directorio contiene la infraestructura AWS que crea la instancia EC2 del la
 - Asigna red, seguridad y salida publica
 - Genera un PEM local para conectar por SSH
 - Expone outputs utiles para continuar con Kind y ArgoCD
+- Configura Ubuntu 22.04 (Jammy) y cambia SSH al puerto definido en `ssh_port`
 
 ## Requisitos
 
@@ -42,6 +43,8 @@ root_volume_size  = 20
 ssh_port          = 2222
 ```
 
+Tambien suelen definirse: `vpc_cidr`, `subnet_cidr`, `allowed_http_cidr`, `allowed_ssh_cidr`, `allowed_app_cidr`, `canonical_owner` y `common_tags`.
+
 Cada usuario debe adaptar ese archivo a su propia cuenta AWS. Si necesitas reproducibilidad publica, usa `terraform.tfvars` local y conserva una version ejemplo si la añades aparte.
 
 ## Instancias versionadas
@@ -57,15 +60,22 @@ Comportamiento esperado:
 
 ```bash
 terraform output
+terraform output instance_id
+terraform output public_ip
 terraform output ssh_connection_command
 terraform output latest_instance_version
 terraform output instance_ids
 terraform output public_ips
+terraform output nginx_nodeport_url
+terraform output argocd_nodeport_url
+terraform output prometheus_url
 ```
 
 ## Acceso SSH
 
 Si cambias el puerto SSH en `terraform.tfvars`, actualiza tambien el comando de conexion que te devuelve el output `ssh_connection_command`.
+
+Nota: el modulo devuelve el comando SSH listo para usar con la llave generada en `private_key_path`.
 
 ## Nota sobre la llave privada en Windows
 

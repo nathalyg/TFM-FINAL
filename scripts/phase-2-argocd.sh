@@ -70,7 +70,7 @@ echo "[5/5] Creando Application de ArgoCD..."
 if [ -f "argocd/application.yaml" ]; then
     echo "Aplicando Application desde argocd/application.yaml..."
     kubectl apply -f argocd/application.yaml
-    echo "Application creada"
+    echo "Application creada/actualizada"
 else
     echo "argocd/application.yaml no encontrado"
     echo "   Crea el archivo con los manifiestos de tu repositorio."
@@ -99,6 +99,17 @@ spec:
 APPEOF
     echo ""
     echo "Template guardado en /tmp/app-template.yaml"
+    echo "Aplicando template de fallback..."
+    kubectl apply -f /tmp/app-template.yaml
+    echo "Application creada desde template"
+fi
+
+# Garantia idempotente: deja automated.selfHeal/prune activos aunque el YAML venga distinto.
+if kubectl get application nginx-demo -n ${NAMESPACE_ARGOCD} >/dev/null 2>&1; then
+    echo "Forzando syncPolicy.automated (selfHeal=true, prune=true)..."
+    kubectl patch application nginx-demo -n ${NAMESPACE_ARGOCD} --type merge \
+      -p '{"spec":{"syncPolicy":{"automated":{"selfHeal":true,"prune":true}}}}' >/dev/null
+    echo "syncPolicy.automated garantizado"
 fi
 
 echo ""
