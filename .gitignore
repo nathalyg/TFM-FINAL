@@ -2,6 +2,8 @@
 experiments/results/
 experiments/results/**
 *.csv
+!experiments/pruebas_reales/results/
+!experiments/pruebas_reales/results/*.csv
 *.log
 
 # Archivos temporales
