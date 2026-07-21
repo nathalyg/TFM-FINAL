@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # phase-1-cluster.sh — Crear cluster Kind y desplegar nginx manualmente
-# Ubuntu 24.04 LTS | t3.medium
+# Ubuntu 22.04 LTS (Jammy) | t3.medium
 # Uso: bash scripts/phase-1-cluster.sh
 
 set -euo pipefail

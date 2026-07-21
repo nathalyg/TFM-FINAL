@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # phase-0-dependencies.sh — Instalación de dependencias base
-# Ubuntu 24.04 LTS | t3.medium
+# Ubuntu 22.04 LTS (Jammy) | t3.medium
 # Uso: bash scripts/phase-0-dependencies.sh
 
 set -euo pipefail
@@ -139,7 +139,7 @@ if [ ! -d ~/.venv ]; then
     python3 -m venv ~/.venv
     source ~/.venv/bin/activate
     pip install --upgrade pip setuptools wheel -q
-    pip install pyyaml jinja2 matplotlib pandas seaborn numpy -q
+    pip install pyyaml jinja2 matplotlib pandas numpy scipy requests -q
     echo "Python venv creado (usar con: source ~/.venv/bin/activate)"
 else
     echo "Python venv ya existe"

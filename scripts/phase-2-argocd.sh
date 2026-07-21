@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # phase-2-argocd.sh — Instalar ArgoCD y crear Application
-# Ubuntu 24.04 LTS | t3.medium
+# Ubuntu 22.04 LTS (Jammy) | t3.medium
 # Uso: bash scripts/phase-2-argocd.sh
 
 set -euo pipefail

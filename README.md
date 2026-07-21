@@ -78,6 +78,8 @@ Versiones validadas en este proyecto:
 - matplotlib
 - scipy
 
+> **Nota de versiones usadas en el entorno existente:** para generar los CSV y las figuras se utilizó un entorno Python que ya tenía instaladas estas versiones: `pandas 3.0.3`, `numpy 2.3.1`, `requests 2.34.2`, `matplotlib 3.10.9` y `scipy 1.17.1`.
+
 > **Nota** Para reproducibilidad del análisis, crea un entorno virtual e instala las librerías listadas en esta sección (`pandas`, `numpy`, `requests`, `matplotlib`, `scipy`):
 >
 > ```bash
@@ -298,7 +300,7 @@ Puertos expuestos por el script:
 
 ## 9. Instalar ArgoCD y configurar la Application
 
-El despliegue de ArgoCD se realiza con el script de la fase 2, que instala vía Helm y crea la `Application`:
+El despliegue de ArgoCD se realiza con el script de la fase 2, que aplica los manifiestos oficiales de ArgoCD (via `kubectl apply` sobre `install.yaml`) y crea la `Application`:
 
 ```bash
 bash scripts/phase-2-argocd.sh
@@ -343,6 +345,8 @@ En la ruta normal del laboratorio, la fase 2 instala ArgoCD, crea la `Applicatio
 ```bash
 bash scripts/phase-3-prometheus.sh
 ```
+
+En esta fase, Helm se usa solo para instalar `kube-state-metrics` (chart `prometheus-community/kube-state-metrics`) cuando no existe previamente en el cluster.
 
 Para poder comparar tiempos con Prometheus, mantenlo accesible durante los experimentos y la validación. En otra terminal:
 
